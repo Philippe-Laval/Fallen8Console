@@ -67,14 +67,24 @@ public class Fallen8Database : IDisposable
         _logger.LogInformation($"{_fallen8.VertexCount} vertices, {_fallen8.EdgeCount} edges");
     }
 
-    public VertexModel[] AddVertices(params (string Label, string Name)[] specs)
+    public VertexModel AddVertice(string label, Dictionary<string, object> properties)
+    {
+        var creationDate = Convert.ToUInt32(DateTimeOffset.Now.ToUnixTimeSeconds());
+
+        var tx = new CreateVerticesTransaction();
+        tx.AddVertex(creationDate, label, properties);
+        _fallen8.EnqueueTransaction(tx).WaitUntilFinished();
+        return tx.GetCreatedVertices().Single();
+    }
+
+    public VertexModel[] AddVertices(params (string Label, Dictionary<string, object> Properties)[] specs)
     {
         var creationDate = Convert.ToUInt32(DateTimeOffset.Now.ToUnixTimeSeconds());
 
         var tx = new CreateVerticesTransaction();
         foreach (var spec in specs)
         {
-            tx.AddVertex(creationDate, spec.Label, new Dictionary<string, object> { { "name", spec.Name } });
+            tx.AddVertex(creationDate, spec.Label, spec.Properties);
         }
         _fallen8.EnqueueTransaction(tx).WaitUntilFinished();
         return tx.GetCreatedVertices().ToArray();
