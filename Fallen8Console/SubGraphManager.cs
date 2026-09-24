@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+// See SubGraphCodeGenerationTest.cs for an example of how to use this class.
+
 namespace Fallen8Console
 {
     public class SubGraphManager
@@ -81,9 +83,9 @@ namespace Fallen8Console
             return (v[0], v[1], edge);
         }
 
-        public void Test()
+        public void Test1()
         {
-            var (person, company, knows) = BuildGraph();
+            //var (person, company, knows) = BuildGraph();
 
             var spec = new SubGraphSpecification
             {
@@ -106,12 +108,47 @@ namespace Fallen8Console
                         EdgePropertyFilter = "return (p) => p == \"knows\";",
                         EdgeFilter = "return (e) => e.Label == \"knows\";"
                     },
-                    new PatternSpecification { Type = "Vertex", PatternName = "c" }
+                    new PatternSpecification {
+                        Type = "Vertex",
+                        PatternName = "c"
+                    }
                 }
             };
 
             var error = CodeGenerationHelper.TryGenerateSubGraphDefinition(spec, out var definition);
         }
+
+        public void Test2()
+        {
+            var spec = new SubGraphSpecification
+            {
+                Name = "typed-slots",
+                VertexFilter = "return (v) => v.GetOutDegree() >= 1;",
+                EdgeFilter = "return (e) => e.SourceVertex.Label == \"person\";"
+            };
+
+            var error = CodeGenerationHelper.TryGenerateSubGraphDefinition(spec, out var definition);
+        }
+
+        public void Test3()
+        {
+            var spec = new SubGraphSpecification
+            {
+                Name = "var-len",
+                Patterns = new List<PatternSpecification>
+                {
+                    new PatternSpecification { Type = "Vertex" },
+                    new PatternSpecification { Type = "VariableLengthEdge", Direction = "OutgoingEdge", MinLength = 1, MaxLength = 3 },
+                    new PatternSpecification { Type = "Vertex" }
+                }
+            };
+
+            var error = CodeGenerationHelper.TryGenerateSubGraphDefinition(spec, out var definition);
+
+        }
+
+
+
 
     }
 }
