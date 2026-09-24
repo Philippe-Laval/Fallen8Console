@@ -6,6 +6,7 @@ using NoSQL.GraphDB.Core.Index;
 using NoSQL.GraphDB.Core.Index.Vector;
 using NoSQL.GraphDB.Core.Model;
 using NoSQL.GraphDB.Core.Transaction;
+using static System.Net.Mime.MediaTypeNames;
 
 // https://docs.fallen-8.com/
 // https://docs.fallen-8.com/library/
@@ -18,8 +19,60 @@ namespace Fallen8Console
     {
         static void Main(string[] args)
         {
+            TestSubGraph();
+            TestPluginManager();
             TestFallen8Database();
             TestShortestPath();
+        }
+
+        static void TestSubGraph()
+        {
+            var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+            var logger = loggerFactory.CreateLogger<Program>();
+
+            string savePath = System.IO.Path.Combine(Environment.CurrentDirectory, "subgraph.f8s");
+            string walPath = System.IO.Path.Combine(Environment.CurrentDirectory, "subgraph.f8s.wal");
+
+            bool reset = false;
+            //bool reset = args.Length > 0 && args[0] == "--reset";
+            if (reset)
+            {
+                File.Delete(savePath);
+                File.Delete(walPath);
+            }
+
+            if (!File.Exists(savePath))
+            {
+                var db = new SubGraphManager(false, savePath, walPath, loggerFactory);
+
+                (VertexModel person, VertexModel company, EdgeModel knows) = db.BuildGraph();
+                db.ShowInfo();
+
+                string actualPath = db.Save(1);
+
+                db.Dispose();
+            }
+
+            var fallen8Database = new SubGraphManager(false, savePath, walPath, loggerFactory);
+            (TransactionState State, Exception Error) = fallen8Database.Load();
+
+            fallen8Database.ShowInfo();
+
+        }
+
+        static void TestPluginManager()
+        {
+            var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+            var logger = loggerFactory.CreateLogger<Program>();
+
+            string savePath = System.IO.Path.Combine(Environment.CurrentDirectory, "plugins.f8s");
+            string walPath = System.IO.Path.Combine(Environment.CurrentDirectory, "plugins.f8s.wal");
+            
+            var pluginManager = new PluginManager(false, savePath, walPath, loggerFactory);
+            
+            pluginManager.RegisterPlugins();
+            pluginManager.GetPluginInfo();
+            pluginManager.Test();
         }
 
         static void TestFallen8Database()

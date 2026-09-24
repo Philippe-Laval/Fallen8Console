@@ -8,8 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fallen-8" Version="0.0.40" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\fallen-8-core\fallen-8-core-app\fallen-8-core-app.csproj" />
+    <ProjectReference Include="..\..\fallen-8-core\fallen-8-core\fallen-8-core.csproj" />
   </ItemGroup>
 
 </Project>

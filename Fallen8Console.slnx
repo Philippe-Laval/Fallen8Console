@@ -1,3 +1,6 @@
 <Solution>
+  <Project Path="../fallen-8-core/fallen-8-core-app/fallen-8-core-app.csproj" />
+  <Project Path="../fallen-8-core/fallen-8-core/fallen-8-core.csproj" />
   <Project Path="Fallen8Console/Fallen8Console.csproj" />
+  <Project Path="NoSQL.GraphDB.Core.App/NoSQL.GraphDB.Core.App.csproj" Id="27688d06-eb65-45e0-ab2f-ac5738bd5557" />
 </Solution>

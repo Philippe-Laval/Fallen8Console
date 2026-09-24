@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Helper\CodeGenerationHelper.cs" />
+    <Compile Remove="Helper\PluginCompiler.cs" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Fallen-8" Version="0.0.40" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Helper\" />
+	  <Folder Include="Model\" />
+	</ItemGroup>
+	
+</Project>
