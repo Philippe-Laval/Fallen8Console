@@ -58,6 +58,20 @@ namespace Fallen8Console
 
             fallen8Database.ShowInfo();
 
+            fallen8Database.Test1();
+            fallen8Database.Test2();
+            fallen8Database.Test3();
+            fallen8Database.Test4();
+            fallen8Database.Test5();
+            fallen8Database.Test6();
+            fallen8Database.Test7();
+            fallen8Database.Test8();
+            fallen8Database.Test9();
+            fallen8Database.Test10();
+            fallen8Database.Test11();
+            fallen8Database.Test12();
+            fallen8Database.Test13();
+            fallen8Database.Test14();
         }
 
         static void TestPluginManager()
