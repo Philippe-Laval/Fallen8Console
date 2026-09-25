@@ -678,5 +678,96 @@ namespace Fallen8Console
             _logger.LogInformation($"Subgraph created with {recalculatedSubGraph.SubGraph.VertexCount} vertices and {recalculatedSubGraph.SubGraph.EdgeCount} edges.");
         }
 
+        public void Test15()
+        {
+            using SampleGraphBuilder sm = new SampleGraphBuilder(true, string.Empty, string.Empty, _loggerFactory);
+            var fallen8 = sm.CreateSingleVertexGraph();
+            var subGraphName = "test-subgraph";
+
+            var definition = new SubGraphDefinition
+            {
+                Name = subGraphName,
+                Pattern = new List<APattern>
+                {
+                    new VertexPattern { PatternName = "node", Vertex = v => v.Label == "node" }
+                }
+            };
+
+            // Create a subgraph using the typed version
+            SubGraphResult originalSubGraph;
+            fallen8.SubGraphFactory.TryCreateSubGraph<BreadthFirstSearchSubgraphAlgorithm>(
+                out originalSubGraph, subGraphName, definition);
+
+            _logger.LogInformation($"Subgraph created with {originalSubGraph.SubGraph.VertexCount} vertices and {originalSubGraph.SubGraph.EdgeCount} edges.");
+
+
+            // Modify the graph by adding a new vertex
+            var creationDate = Convert.ToUInt32(DateTimeOffset.Now.ToUnixTimeSeconds());
+            var verticesTx = new CreateVerticesTransaction();
+            verticesTx.AddVertex(creationDate, "node", new Dictionary<string, object>() { { "name", "E" } });
+            var verticesInfo = fallen8.EnqueueTransaction(verticesTx);
+            verticesInfo.WaitUntilFinished();
+
+            // Recalculate the subgraph
+            var recalculateResult = fallen8.SubGraphFactory.TryRecalculateSubGraph(subGraphName);
+
+            // Get the subgraph
+            SubGraphResult recalculatedSubGraph;
+            fallen8.SubGraphFactory.TryGetSubGraph(out recalculatedSubGraph, subGraphName);
+
+            _logger.LogInformation($"Subgraph created with {recalculatedSubGraph.SubGraph.VertexCount} vertices and {recalculatedSubGraph.SubGraph.EdgeCount} edges.");
+        }
+
+        public void Test16()
+        {
+            using SampleGraphBuilder sm = new SampleGraphBuilder(true, string.Empty, string.Empty, _loggerFactory);
+            var fallen8 = sm.CreateComplexGraph();
+
+            var definition1 = new SubGraphDefinition
+            {
+                Name = "persons",
+                Pattern = new List<APattern>
+                {
+                    new VertexPattern { PatternName = "person", Vertex = v => v.Label == "person" }
+                }
+            };
+
+            var definition2 = new SubGraphDefinition
+            {
+                Name = "companies",
+                Pattern = new List<APattern>
+                {
+                    new VertexPattern { PatternName = "company", Vertex = v => v.Label == "company" }
+                }
+            };
+
+            // Create a subgraphs using the typed version
+            SubGraphResult subGraph1, subGraph2;
+            fallen8.SubGraphFactory.TryCreateSubGraph<BreadthFirstSearchSubgraphAlgorithm>(
+                 out subGraph1, "persons", definition1);
+            fallen8.SubGraphFactory.TryCreateSubGraph<BreadthFirstSearchSubgraphAlgorithm>(
+                out subGraph2, "companies", definition2);
+
+
+            // Modify the graph by adding a new vertex
+            var creationDate = Convert.ToUInt32(DateTimeOffset.Now.ToUnixTimeSeconds());
+            var verticesTx = new CreateVerticesTransaction();
+            verticesTx.AddVertex(creationDate, "person", new Dictionary<string, object>() { { "name", "David" } });
+            verticesTx.AddVertex(creationDate, "company", new Dictionary<string, object>() { { "name", "NewCorp" } });
+            var verticesInfo = fallen8.EnqueueTransaction(verticesTx);
+            verticesInfo.WaitUntilFinished();
+
+            // Recalculate all subgraphs
+            var recalculatedCount = fallen8.SubGraphFactory.RecalculateAllSubGraphs();
+
+            // Get the subgraph
+            SubGraphResult recalcPersons, recalcCompanies;
+            fallen8.SubGraphFactory.TryGetSubGraph(out recalcPersons, "persons");
+            fallen8.SubGraphFactory.TryGetSubGraph(out recalcCompanies, "companies");
+        }
+
+
+
+
     }
 }
