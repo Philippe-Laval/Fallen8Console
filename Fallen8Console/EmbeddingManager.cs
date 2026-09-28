@@ -11,7 +11,7 @@ using System.Xml.Linq;
 
 namespace Fallen8Console
 {
-    public class EmbeddingManager
+    public class EmbeddingManager : IDisposable
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
@@ -22,6 +22,11 @@ namespace Fallen8Console
             _loggerFactory = loggerFactory;
             _logger = loggerFactory.CreateLogger<EmbeddingManager>();
             _fallen8 = new Fallen8(loggerFactory);
+        }
+
+        public void Dispose()
+        {
+            _fallen8.Dispose();
         }
 
         private int Vertex(string label = "person", string name = "A")

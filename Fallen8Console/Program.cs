@@ -19,11 +19,27 @@ namespace Fallen8Console
     {
         static void Main(string[] args)
         {
+            TestVectorIndex();
             TestEmbedding();
             TestSubGraph();
             TestPluginManager();
             TestFallen8Database();
             TestShortestPath();
+        }
+
+
+        static void TestVectorIndex()
+        {
+            var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+            var logger = loggerFactory.CreateLogger<Program>();
+            var vectorIndexManager = new VectorIndexManager(loggerFactory);
+
+            vectorIndexManager.CreateIndexes();
+            vectorIndexManager.Test1();
+            vectorIndexManager.Test2();
+            vectorIndexManager.Test3();
+            vectorIndexManager.Test4();
+            vectorIndexManager.Test5();
         }
 
         static void TestEmbedding()
@@ -35,7 +51,6 @@ namespace Fallen8Console
             embeddingManager.PopulateGraphWithEmbeddings();
             embeddingManager.Test1();
         }
-
 
 
         static void TestSubGraph()
