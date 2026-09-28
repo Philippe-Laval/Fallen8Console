@@ -19,12 +19,27 @@ namespace Fallen8Console
     {
         static void Main(string[] args)
         {
+            TestIndexManager();
             TestVectorIndex();
             TestEmbedding();
             TestSubGraph();
             TestPluginManager();
             TestFallen8Database();
             TestShortestPath();
+        }
+
+        static void TestIndexManager()
+        {
+            var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+            var logger = loggerFactory.CreateLogger<Program>();
+            var indexManager = new IndexManager(loggerFactory);
+            indexManager.Init();
+
+            indexManager.Test1();
+            indexManager.Test2();
+            indexManager.Test3();
+            indexManager.Test4();
+
         }
 
 
