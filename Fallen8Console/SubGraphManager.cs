@@ -8,6 +8,7 @@ using NoSQL.GraphDB.Core.Model;
 using NoSQL.GraphDB.Core.Transaction;
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
 
 // See SubGraphCodeGenerationTest.cs for an example of how to use this class.
@@ -30,7 +31,7 @@ namespace Fallen8Console
             _savePath = savePath;
             _wallPath = walPath;
             _loggerFactory = loggerFactory;
-            _logger = loggerFactory.CreateLogger<Fallen8Database>();
+            _logger = loggerFactory.CreateLogger<SubGraphManager>();
 
             if (inMemory)
             {
@@ -708,6 +709,8 @@ namespace Fallen8Console
             var verticesInfo = fallen8.EnqueueTransaction(verticesTx);
             verticesInfo.WaitUntilFinished();
 
+            var canRecalculate = fallen8.SubGraphFactory.CanRecalculateSubGraph(subGraphName);
+
             // Recalculate the subgraph
             var recalculateResult = fallen8.SubGraphFactory.TryRecalculateSubGraph(subGraphName);
 
@@ -766,7 +769,209 @@ namespace Fallen8Console
             fallen8.SubGraphFactory.TryGetSubGraph(out recalcCompanies, "companies");
         }
 
+        public void Test17()
+        {
+            using SampleGraphBuilder sm = new SampleGraphBuilder(true, string.Empty, string.Empty, _loggerFactory);
+            var fallen8 = sm.CreateComplexGraph();
 
+            var definition1 = new SubGraphDefinition
+            {
+                Name = "persons",
+                Pattern = new List<APattern>
+                {
+                    new VertexPattern { PatternName = "person", Vertex = v => v.Label == "person" }
+                }
+            };
+
+            var definition2 = new SubGraphDefinition
+            {
+                Name = "companies",
+                Pattern = new List<APattern>
+                {
+                    new VertexPattern { PatternName = "company", Vertex = v => v.Label == "company" }
+                }
+            };
+
+            // Create a subgraphs using the typed version
+            SubGraphResult subGraph1, subGraph2;
+            fallen8.SubGraphFactory.TryCreateSubGraph<BreadthFirstSearchSubgraphAlgorithm>(
+                 out subGraph1, "persons", definition1);
+            fallen8.SubGraphFactory.TryCreateSubGraph<BreadthFirstSearchSubgraphAlgorithm>(
+                out subGraph2, "companies", definition2);
+
+            // Get all subgraph names
+            var names = fallen8.SubGraphFactory.GetAllSubGraphNames();
+
+            var namesList = names.ToList();
+        }
+
+        public void Test18()
+        {
+            // Arrange: A->B->D and A->C->E. A 2-hop variable-length path from A
+            // whose terminal must be D. Only the A->B->D arm qualifies.
+            using SampleGraphBuilder sm = new SampleGraphBuilder(true, string.Empty, string.Empty, _loggerFactory);
+            var fallen8 = sm.CreateYGraph();
+            var algorithm = new BreadthFirstSearchSubgraphAlgorithm();
+            algorithm.Initialize(fallen8, null);
+
+            var definition = new SubGraphDefinition
+            {
+                Name = "y-two-hop",
+                Pattern = new List<APattern>
+                {
+                    new VertexPattern
+                    {
+                        PatternName = "a",
+                        Vertex = vertex => vertex.TryGetProperty(out object n, "name") && n.ToString() == "A"
+                    },
+                    new VariableLengthEdgePattern
+                    {
+                        PatternName = "hops",
+                        Direction = Direction.OutgoingEdge,
+                        MinLength = 2,
+                        MaxLength = 2
+                    },
+                    new VertexPattern
+                    {
+                        PatternName = "d",
+                        Vertex = vertex => vertex.TryGetProperty(out object n, "name") && n.ToString() == "D"
+                    }
+                }
+            };
+
+            var result = algorithm.TryCreateSubgraph(out SubGraphResult subgraphResult, definition);
+        }
+
+        public void Test19()
+        {
+            // Arrange: A->B->D and A->C->E. A 2-hop variable-length path from A
+            // whose terminal must be D. Only the A->B->D arm qualifies.
+            using SampleGraphBuilder sm = new SampleGraphBuilder(true, string.Empty, string.Empty, _loggerFactory);
+            var fallen8 = sm.CreateUnevenArmsGraph();
+            var algorithm = new BreadthFirstSearchSubgraphAlgorithm();
+            algorithm.Initialize(fallen8, null);
+
+            var definition = new SubGraphDefinition
+            {
+                Name = "range-both",
+                Pattern = new List<APattern>
+                {
+                    new VertexPattern
+                    {
+                        PatternName = "a",
+                        Vertex = vertex => vertex.TryGetProperty(out object n, "name") && n.ToString() == "A"
+                    },
+                    new VariableLengthEdgePattern
+                    {
+                        PatternName = "hops",
+                        Direction = Direction.OutgoingEdge,
+                        MinLength = 1,
+                        MaxLength = 2
+                    },
+                    new VertexPattern { PatternName = "any" }
+                }
+            };
+
+            var result = algorithm.TryCreateSubgraph(out SubGraphResult subgraphResult, definition);
+
+            // "All of A, B, C, D are on a 1..2-hop path"
+            var vertexCount = subgraphResult.SubGraph.VertexCount;
+            // "A->B (len 1), A->C and C->D (len 2)"
+            var edgeCount = subgraphResult.SubGraph.EdgeCount;
+
+        }
+
+        /// <summary>
+        /// A pattern that leads with a single edge hop and closes on a vertex, which is the shape
+        /// that reaches level-0 seeding with an edge pattern.
+        /// </summary>
+        private SubGraphDefinition LeadingEdge(string name, Direction direction, Delegates.EdgePropertyFilter edgeProperty)
+        {
+            return new SubGraphDefinition
+            {
+                Name = name,
+                Pattern = new List<APattern>
+                {
+                    new EdgePattern { PatternName = "e", Direction = direction, EdgeProperty = edgeProperty },
+                    new VertexPattern { PatternName = "v" }
+                }
+            };
+        }
+
+        private BreadthFirstSearchSubgraphAlgorithm AlgorithmOn(Fallen8 fallen8)
+        {
+            var algorithm = new BreadthFirstSearchSubgraphAlgorithm();
+            algorithm.Initialize(fallen8, null);
+            return algorithm;
+        }
+
+        public void Test20()
+        {
+            using SampleGraphBuilder sm = new SampleGraphBuilder(true, string.Empty, string.Empty, _loggerFactory);
+            var fallen8 = sm.CreateRelationshipGraph();
+            var algorithm = AlgorithmOn(fallen8);
+
+            var created = algorithm.TryCreateSubgraph(out SubGraphResult result,
+                 LeadingEdge("knows-only", Direction.OutgoingEdge, p => p == "knows"));
+
+            // "A leading edge pattern followed by a vertex is a valid pattern"
+
+
+            var created2 = algorithm.TryCreateSubgraph(out SubGraphResult result2,
+                LeadingEdge("knows-undirected", Direction.UndirectedEdge, p => p == "knows"));
+
+        }
+
+
+        public void Test21()
+        {
+            using SampleGraphBuilder sm = new SampleGraphBuilder(true, string.Empty, string.Empty, _loggerFactory);
+            var fallen8 = sm.CreateRelationshipGraph();
+            var algorithm = AlgorithmOn(fallen8);
+
+            var definition = new SubGraphDefinition
+            {
+                Name = "knows-and-labelled",
+                Pattern = new List<APattern>
+                {
+                    new EdgePattern
+                    {
+                        PatternName = "e",
+                        Direction = Direction.OutgoingEdge,
+                        EdgeProperty = p => p == "knows",
+                        Edge = e => e.Label == "edge-alice-bob"
+                    },
+                    new VertexPattern { PatternName = "v" }
+                }
+            };
+
+            var created = algorithm.TryCreateSubgraph(out SubGraphResult result, definition);
+
+            // "Both edge filters apply, they are not alternatives"
+            // "Only Alice and Bob remain"
+
+        }
+
+        public void Test22()
+        {
+            using SampleGraphBuilder sm = new SampleGraphBuilder(true, string.Empty, string.Empty, _loggerFactory);
+            var fallen8 = sm.CreateRelationshipGraph();
+            var algorithm = AlgorithmOn(fallen8);
+
+            var definition = new SubGraphDefinition
+            {
+                Name = "vertex-leading",
+                Pattern = new List<APattern>
+                {
+                    new VertexPattern { PatternName = "p1", Vertex = v => v.Label == "person" },
+                    new EdgePattern { PatternName = "e", Direction = Direction.OutgoingEdge, EdgeProperty = p => p == "knows" },
+                    new VertexPattern { PatternName = "p2", Vertex = v => v.Label == "person" }
+                }
+            };
+
+            var created = algorithm.TryCreateSubgraph(out SubGraphResult result, definition);
+
+        }
 
 
     }

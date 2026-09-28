@@ -24,7 +24,7 @@ namespace Fallen8Console
         {
             _savePath = savePath;
             _wallPath = walPath;
-            _logger = loggerFactory.CreateLogger<Fallen8Database>();
+            _logger = loggerFactory.CreateLogger<PluginManager>();
 
             if (inMemory)
             {

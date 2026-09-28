@@ -19,11 +19,24 @@ namespace Fallen8Console
     {
         static void Main(string[] args)
         {
+            TestEmbedding();
             TestSubGraph();
             TestPluginManager();
             TestFallen8Database();
             TestShortestPath();
         }
+
+        static void TestEmbedding()
+        {
+            var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+            var logger = loggerFactory.CreateLogger<Program>();
+
+            var embeddingManager = new EmbeddingManager(loggerFactory);
+            embeddingManager.PopulateGraphWithEmbeddings();
+            embeddingManager.Test1();
+        }
+
+
 
         static void TestSubGraph()
         {

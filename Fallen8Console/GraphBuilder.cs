@@ -29,7 +29,7 @@ public sealed class GraphBuilder : IDisposable
     {
         _savePath = savePath;
         _wallPath = walPath;
-        _logger = loggerFactory.CreateLogger<Fallen8Database>();
+        _logger = loggerFactory.CreateLogger<GraphBuilder>();
 
         if (inMemory)
         {
