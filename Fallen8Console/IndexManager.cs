@@ -266,6 +266,7 @@ namespace Fallen8Console
         public void Test4()
         {
             IIndex index;
+            // Create an index of type "RangeIndex" with name "ageRange"
             _fallen8.IndexFactory.TryCreateIndex(out index, "ageRange", "RangeIndex");
 
             var testVertex1 = Element(0);
@@ -276,10 +277,85 @@ namespace Fallen8Console
             index.AddOrUpdate(20, testVertex2);
             index.AddOrUpdate(30, testVertex3);
 
+            // Use the index with name "ageRange"
             IReadOnlyList<AGraphElementModel> result;
             bool found = _fallen8.RangeIndexScan(out result, "ageRange", 15, 25, true, true);
         }
 
+        public void Test5()
+        {
+            int keyCount = _regExIndex.CountOfKeys();
+            int valueCount = _regExIndex.CountOfValues();
+
+            ImmutableList<AGraphElementModel> result;
+            bool found = _regExIndex.TryGetValue(out result, "The quick brown fox jumps over the lazy dog");
+
+            // Fulltext query with multiple words
+            FulltextSearchResult queryResult;
+            found = _regExIndex.TryQuery(out queryResult, "fox");
+
+            var count = queryResult.Elements.Count;
+            var matchIds = queryResult.Elements.Select(r => r.GraphElement.Id).ToList();
+
+            bool keyRemoved = _regExIndex.TryRemoveKey("The quick brown fox jumps over the lazy dog");
+
+            _regExIndex.Wipe();
+
+
+
+
+            var testVertex1 = Element(0);
+            var testVertex2 = Element(1);
+            var testVertex3 = Element(2);
+
+            // One key can have several values
+            // All three values added under one key must be retained
+            _regExIndex.AddOrUpdate("the quick brown fox", testVertex1);
+            _regExIndex.AddOrUpdate("the quick brown fox", testVertex2);
+            _regExIndex.AddOrUpdate("the quick brown fox", testVertex3);
+
+            found = _regExIndex.TryGetValue(out result, "the quick brown fox");
+            count = result.Count;
+
+            _regExIndex.Dispose();
+        }
+
+        public void Test6()
+        {
+            var indexLogger = _loggerFactory.CreateLogger<IndexFactory>();
+            var indexFactory = new IndexFactory(_fallen8, indexLogger);
+            var availablePlugins = indexFactory.GetAvailableIndexPlugins().ToList();
+            foreach(var availablePlugin in availablePlugins)
+            {
+                _logger.LogInformation($"Available plugin : {availablePlugin}");
+            }
+
+            // Create a dictionary index
+            IIndex dictionaryIndex;
+            bool createdDictionary = indexFactory.TryCreateIndex(out dictionaryIndex, "testDictionaryIndex", "DictionaryIndex");
+
+            IIndex singleValueIndex;
+            bool createdSingleValue = indexFactory.TryCreateIndex(out singleValueIndex, "testSingleValueIndex", "SingleValueIndex");
+
+            IIndex rangeIndex;
+            bool createdRange = indexFactory.TryCreateIndex(out rangeIndex, "testRangeIndex", "RangeIndex");
+
+            IIndex fulltextIndex;
+            bool createdFulltext = indexFactory.TryCreateIndex(out fulltextIndex, "testFulltextIndex", "RegExIndex");
+
+            // Retrieve the created index
+            IIndex retrievedIndex;
+            bool retrieved = indexFactory.TryGetIndex(out retrievedIndex, "testDictionaryIndex");
+
+
+            bool deleted = indexFactory.TryDeleteIndex("testDictionaryIndex");
+            deleted = indexFactory.TryDeleteIndex("testSingleValueIndex");
+            deleted = indexFactory.TryDeleteIndex("testRangeIndex");
+            deleted = indexFactory.TryDeleteIndex("testFulltextIndex");
+
+
+            indexFactory.DeleteAllIndices();
+        }
 
     }
 }
