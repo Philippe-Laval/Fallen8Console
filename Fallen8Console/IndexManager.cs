@@ -33,7 +33,6 @@ namespace Fallen8Console
             _loggerFactory = loggerFactory;
             _logger = loggerFactory.CreateLogger<IndexManager>();
             _fallen8 = new Fallen8(loggerFactory);
-
         }
 
         public void Dispose()
