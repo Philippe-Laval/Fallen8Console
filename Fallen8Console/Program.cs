@@ -13,6 +13,33 @@ using static System.Net.Mime.MediaTypeNames;
 // code
 //https://github.com/cosh/fallen-8-core
 
+// Ces fichiers contiennent des exemples interessants.
+
+// CoreTest.cs
+/*
+// Act - Save the database
+SaveTransaction saveTx = new SaveTransaction() { Path = saveGameLocation, SavePartitions = 1 };
+fallen8.EnqueueTransaction(saveTx).WaitUntilFinished();
+actualPath = saveTx.ActualPath;
+
+// Clear the database
+TabulaRasaTransaction tx = new TabulaRasaTransaction();
+fallen8.EnqueueTransaction(tx).WaitUntilFinished();
+
+// Verify database is empty
+Assert.AreEqual(0, fallen8.VertexCount, "Database should be empty after TabulaRasa");
+
+// Load the database back
+LoadTransaction loadTransaction = new LoadTransaction() { Path = saveGameLocation };
+fallen8.EnqueueTransaction(loadTransaction).WaitUntilFinished(); 
+ */
+
+// NamespaceCollectionTest.cs
+// PathFilterArityTest.cs
+// PropertyReplaceTest.cs
+
+
+
 namespace Fallen8Console
 {
     internal class Program
