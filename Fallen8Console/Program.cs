@@ -19,6 +19,7 @@ namespace Fallen8Console
     {
         static void Main(string[] args)
         {
+            TestGraphAnalytics();
             TestIndexManager();
             TestVectorIndex();
             TestEmbedding();
@@ -26,6 +27,25 @@ namespace Fallen8Console
             TestPluginManager();
             TestFallen8Database();
             TestShortestPath();
+        }
+
+        static void TestGraphAnalytics()
+        {
+            var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+            var logger = loggerFactory.CreateLogger<Program>();
+            var graphAnalyticsManager = new GraphAnalyticsManager(loggerFactory);
+
+            // degree tests
+            graphAnalyticsManager.GetAvailablePlugins();
+            graphAnalyticsManager.Degree_Star_HubAndLeaves_InOutBoth();
+
+            // page rank tests
+            graphAnalyticsManager.PageRank_TwoVertexCycle_IsHalfHalf();
+            graphAnalyticsManager.PageRank_FourVertexGraph_MatchesIndependentlyComputedValues();
+            graphAnalyticsManager.PageRank_DanglingVertex_RanksStillSumToOne();
+            graphAnalyticsManager.PageRank_DampingZero_IsUniform();
+
+
         }
 
         static void TestIndexManager()
