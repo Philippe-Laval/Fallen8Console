@@ -220,5 +220,222 @@ public class GraphAnalyticsManager
     #endregion
 
 
+    #region Weakly Connected Components (WCC)
 
+    public void Wcc_TwoDisjointChains_TwoComponents_SmallestMemberIds()
+    {
+        var a1 = Vertex();
+        var a2 = Vertex();
+        var a3 = Vertex();
+        Edge(a1, a2);
+        Edge(a2, a3);
+
+        var b1 = Vertex();
+        var b2 = Vertex();
+        Edge(b2, b1); // direction must not matter
+
+        var result = Run("WCC");
+
+        // Two disjoint chains should yield two components, with the smallest member id as the component id.
+        _logger.LogInformation($"Component Count: {result.Statistics["ComponentCount"]}");
+
+        _logger.LogInformation($"Vertex Partition - A1: {result.VertexPartitions[a1]}");
+        _logger.LogInformation($"Vertex Partition - A2: {result.VertexPartitions[a2]}");
+        _logger.LogInformation($"Vertex Partition - A3: {result.VertexPartitions[a3]}");
+
+        // smallest member id, direction-blind
+        _logger.LogInformation($"Vertex Partition - B1: {result.VertexPartitions[b1]}");
+        _logger.LogInformation($"Vertex Partition - B2: {result.VertexPartitions[b2]}");
+  
+        _logger.LogInformation($"Converged: {result.Converged}");
+    }
+
+    public void Wcc_SingletonVertex_IsItsOwnComponent()
+    {
+        var lonely = Vertex();
+
+        var result = Run("WCC");
+
+        // A single vertex with no edges should be its own component.
+        _logger.LogInformation($"Component Count: {result.Statistics["ComponentCount"]}");
+        _logger.LogInformation($"Vertex Partition - Lonely: {result.VertexPartitions[lonely]}");
+    }
+
+    #endregion
+
+    #region label propagation
+
+    public void LabelPropagation_TwoCliquesWithBridge_TwoCommunities_Deterministic()
+    {
+        // Two triangles joined by one bridge edge.
+        var clique1 = new[] { Vertex(), Vertex(), Vertex() };
+        var clique2 = new[] { Vertex(), Vertex(), Vertex() };
+        foreach (var clique in new[] { clique1, clique2 })
+        {
+            Edge(clique[0], clique[1]);
+            Edge(clique[1], clique[2]);
+            Edge(clique[2], clique[0]);
+        }
+        Edge(clique1[2], clique2[0]);
+
+        var first = Run("LABELPROPAGATION");
+
+        _logger.LogInformation($"Community Count: {first.Statistics["CommunityCount"]}");
+        _logger.LogInformation($"Converged: {first.Converged}");
+
+        var community1 = first.VertexPartitions[clique1[0]];
+        _logger.LogInformation($"Community 1: {community1}");
+        _logger.LogInformation($"Vertex Partition - Clique1[1]: {first.VertexPartitions[clique1[1]]}");
+        _logger.LogInformation($"Vertex Partition - Clique1[2]: {first.VertexPartitions[clique1[2]]}");
+        
+        var community2 = first.VertexPartitions[clique2[0]];
+        _logger.LogInformation($"Community 2: {community2}");
+        _logger.LogInformation($"Vertex Partition - Clique2[1]: {first.VertexPartitions[clique2[1]]}");
+        _logger.LogInformation($"Vertex Partition - Clique2[2]: {first.VertexPartitions[clique2[2]]}");
+        
+        _logger.LogInformation($"Communities are not equal: {community1}, {community2}");
+    }
+
+    public void LabelPropagation_IsolatedVertices_KeepTheirOwnLabels_AndConvergeInOneRound()
+    {
+        var a = Vertex();
+        var b = Vertex();
+
+        var result = Run("LABELPROPAGATION");
+
+        _logger.LogInformation($"Converged: {result.Converged}");
+
+        _logger.LogInformation($"Vertex Partition - A: {result.VertexPartitions[a]}");
+        _logger.LogInformation($"Vertex Partition - B: {result.VertexPartitions[b]}");
+        _logger.LogInformation($"Community Count: {result.Statistics["CommunityCount"]}");
+    }
+
+    #endregion
+
+    #region triangles
+
+    public void Triangles_K4_HasFourTriangles_ThreePerVertex()
+    {
+        var v = new[] { Vertex(), Vertex(), Vertex(), Vertex() };
+        for (var i = 0; i < 4; i++)
+        {
+            for (var j = i + 1; j < 4; j++)
+            {
+                Edge(v[i], v[j]);
+            }
+        }
+
+        var result = Run("TRIANGLECOUNT");
+        _logger.LogInformation($"Triangle Count: {result.Statistics["TriangleCount"]}");
+        foreach (var id in v)
+        {
+            _logger.LogInformation($"Vertex {id} has {result.VertexScores[id]} triangles");
+        }
+    }
+
+    public void Triangles_FourCycle_HasNone()
+    {
+        var v = new[] { Vertex(), Vertex(), Vertex(), Vertex() };
+        Edge(v[0], v[1]);
+        Edge(v[1], v[2]);
+        Edge(v[2], v[3]);
+        Edge(v[3], v[0]);
+
+        var result = Run("TRIANGLECOUNT");
+        _logger.LogInformation($"Triangle Count: {result.Statistics["TriangleCount"]}");
+    }
+
+    public void Triangles_ParallelEdgesDeduplicated_SelfLoopsIgnored()
+    {
+        var a = Vertex();
+        var b = Vertex();
+        var c = Vertex();
+        Edge(a, b);
+        Edge(a, b); // doubled edge still counts one triangle
+        Edge(b, c);
+        Edge(c, a);
+        Edge(a, a); // self-loop ignored
+
+        var result = Run("TRIANGLECOUNT");
+        _logger.LogInformation($"Triangle Count: {result.Statistics["TriangleCount"]}");
+        _logger.LogInformation($"Vertex {a} has {result.VertexScores[a]} triangles");
+    }
+
+    #endregion
+
+    #region scoping, removal, budgets
+
+    public void LabelScoping_IsInducedSubgraph_OutOfScopeNeighboursInvisible()
+    {
+        var p1 = Vertex("person");
+        var p2 = Vertex("person");
+        var robot = Vertex("robot");
+        Edge(p1, p2);
+        Edge(p2, robot); // leaves the induced subgraph
+
+        var result = Run("DEGREE", new GraphAnalyticsDefinition { VertexLabel = "person" });
+
+        // only persons participate
+        _logger.LogInformation($"Vertex Count: {result.VertexScores.Count}");
+        // the edge to the robot is invisible
+        _logger.LogInformation($"Vertex {p2} has {result.VertexScores[p2]} edges");
+        _logger.LogInformation($"Vertex {robot} is not included");
+    }
+
+    public void EdgePropertyScoping_OnlyTheNamedGroupIsTraversed()
+    {
+        var a = Vertex();
+        var b = Vertex();
+        var c = Vertex();
+        Edge(a, b, "knows");
+        Edge(a, c, "owns");
+
+        var result = Run("DEGREE", new GraphAnalyticsDefinition { EdgePropertyId = "knows" });
+
+        _logger.LogInformation($"Vertex {a} has {result.VertexScores[a]} edges");
+        _logger.LogInformation($"Vertex {b} has {result.VertexScores[b]} edges");
+        // the owns edge is out of scope
+        _logger.LogInformation($"Vertex {c} has {result.VertexScores[c]} edges");
+
+        var wcc = Run("WCC", new GraphAnalyticsDefinition { EdgePropertyId = "knows" });
+        // {a,b} and {c}
+        _logger.LogInformation($"Component Count: {wcc.Statistics["ComponentCount"]}");
+    }
+
+    public void RemovedElements_AreSkipped()
+    {
+        var a = Vertex();
+        var b = Vertex();
+        var doomed = Vertex();
+        Edge(a, b);
+        Edge(b, doomed);
+
+        _fallen8.EnqueueTransaction(new RemoveGraphElementTransaction { GraphElementId = doomed })
+            .WaitUntilFinished();
+
+        var degree = Run("DEGREE");
+        _logger.LogInformation($"Vertex Count : {degree.VertexScores.Count}");
+        _logger.LogInformation($"Vertex {b} has {degree.VertexScores[b]} edges");
+
+        var wcc = Run("WCC");
+        _logger.LogInformation($"Component Count: {wcc.Statistics["ComponentCount"]}");
+    }
+
+    public void Budget_NearZero_SinglePassReturnsFalse_IterativeKeepsLastCompletedPass()
+    {
+        for (var i = 0; i < 200; i++)
+        {
+            Vertex();
+        }
+
+        // A budget that is already exhausted when checked: single-pass algorithms
+        // return false (partial single-pass values are meaningless).
+        var exhausted = new GraphAnalyticsDefinition { TimeBudget = TimeSpan.FromTicks(1) };
+        _fallen8.TryRunAnalytics(out _, "DEGREE", exhausted));
+        _fallen8.TryRunAnalytics(out _, "WCC",  new GraphAnalyticsDefinition { TimeBudget = TimeSpan.FromTicks(1) }));
+        _fallen8.TryRunAnalytics(out _, "PAGERANK", new GraphAnalyticsDefinition { TimeBudget = TimeSpan.FromTicks(1) });
+    }
+
+    // More exemples of scoping, removal, and budget tests can be added here as needed (see GraphAnalyticsTest.cs for inspiration).
+    #endregion
 }

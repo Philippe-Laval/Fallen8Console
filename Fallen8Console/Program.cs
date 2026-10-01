@@ -45,7 +45,24 @@ namespace Fallen8Console
             graphAnalyticsManager.PageRank_DanglingVertex_RanksStillSumToOne();
             graphAnalyticsManager.PageRank_DampingZero_IsUniform();
 
+            // Weakly Connected Components
+            graphAnalyticsManager.Wcc_TwoDisjointChains_TwoComponents_SmallestMemberIds();
+            graphAnalyticsManager.Wcc_SingletonVertex_IsItsOwnComponent();
 
+            // label propagation
+            graphAnalyticsManager.LabelPropagation_TwoCliquesWithBridge_TwoCommunities_Deterministic();
+            graphAnalyticsManager.LabelPropagation_IsolatedVertices_KeepTheirOwnLabels_AndConvergeInOneRound();
+
+            // triangles
+            graphAnalyticsManager.Triangles_K4_HasFourTriangles_ThreePerVertex();
+            graphAnalyticsManager.Triangles_FourCycle_HasNone();
+            graphAnalyticsManager.Triangles_ParallelEdgesDeduplicated_SelfLoopsIgnored();
+
+            // scoping, removal, budgets
+            graphAnalyticsManager.LabelScoping_IsInducedSubgraph_OutOfScopeNeighboursInvisible();
+            graphAnalyticsManager.EdgePropertyScoping_OnlyTheNamedGroupIsTraversed();
+            graphAnalyticsManager.RemovedElements_AreSkipped();
+            graphAnalyticsManager.Budget_NearZero_SinglePassReturnsFalse_IterativeKeepsLastCompletedPass();
         }
 
         static void TestIndexManager()
